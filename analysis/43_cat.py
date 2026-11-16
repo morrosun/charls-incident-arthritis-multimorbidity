@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-"""分类剂量反应：CES-D / 睡眠时长 / 午睡 / BMI(2015)"""
+"""Categorical dose-response for CES-D, sleep duration, napping and 2015 BMI.
+
+Output: dose_response.csv"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json
 warnings.filterwarnings("ignore")
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
@@ -39,5 +46,6 @@ def run(var, ref, extra=[]):
 rows=[]
 for v,ref in [("cesd_c","0–4"),("sleep_c","7–7.9"),("nap_c","0"),("bmi_c","18.5–23.9")]:
     rows+=run(v,ref)
-R=pd.DataFrame(rows); R.to_csv("out/dose_response.csv",index=False,encoding="utf-8-sig")
-print(R.groupby("var").apply(lambda x: x[["level","n","ev","RR","lo","hi","p"]].to_string(index=False), include_groups=False).str.cat(sep="\n\n"))
+R=pd.DataFrame(rows); R.to_csv(os.path.join(OUT, "dose_response.csv"),index=False,encoding="utf-8-sig")
+for _v, _g in R.groupby("var"):
+    print(_g[["level","n","ev","RR","lo","hi","p"]].to_string(index=False), "\n")

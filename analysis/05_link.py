@@ -1,3 +1,10 @@
+# WARNING - superseded exploration script, kept for provenance only.
+# Its de-duplication rule (prefer the record that answered `da011`) is NOT the
+# rule used in the analysis: the 974 repeated records are re-releases of the same
+# interview, so the latest annual package must win. See `10_build.py`. The rule
+# used here is retained only to document how the issue was first examined, and
+# this script produces no input for any downstream step.
+#
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os

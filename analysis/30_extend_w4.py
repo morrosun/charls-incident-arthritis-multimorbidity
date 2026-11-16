@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""在 analytic_raw.csv 上追加 2018(w4) 暴露块 -> analytic.csv"""
+"""Append the 2018 (wave-4) exposure block to analytic_raw.csv.
+
+Output: analytic.csv"""
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os
@@ -21,7 +23,7 @@ vs=["ID","wave","arthre","bmi","cesd10","flonel","satlife","sleep_night","sleep_
 ch,_=pyreadstat.read_dta(f,usecols=vs)
 w4=ch[ch.wave==4].drop(columns="wave").rename(columns={c:c+"_4" for c in ch.columns if c not in ("ID","wave")})
 
-d=pd.read_csv("out/analytic_raw.csv",dtype={"ID":str}).merge(w4,on="ID",how="left")
+d=pd.read_csv(os.path.join(OUT, "analytic_raw.csv"),dtype={"ID":str}).merge(w4,on="ID",how="left")
 def num(s): return pd.to_numeric(s,errors="coerce")
 
 # 2018 暴露
@@ -46,7 +48,7 @@ d["smoke4"]=num(d.smokev_4); d["drink4"]=num(d.drinkl_4)
 d["met4"]=num(d.totmet_4); d["met_q4"]=pd.qcut(d.met4,4,labels=[1,2,3,4])
 d["srh4"]=num(d.srh_4).where(lambda x:x.between(1,5))
 d["arthre4"]=num(d.arthre_4).where(lambda x:x.isin([0,1]))
-d.to_csv("out/analytic.csv",index=False,encoding="utf-8-sig")
+d.to_csv(os.path.join(OUT, "analytic.csv"),index=False,encoding="utf-8-sig")
 print("saved", d.shape)
 m=d[(d.at_risk==1)&(pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")==2020)&d.age_base.between(45,95)]
 print("主样本", len(m), "事件", int(m.incident.sum()))

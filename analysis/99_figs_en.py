@@ -1,5 +1,12 @@
-# -*- coding: utf-8 -*-
-"""重出五张全英文图（Figure 1–5），使用已固定的结果文件"""
+"""Figures 1-5 in English, drawn from the fixed result files.
+
+Output: fig1_flow_en.png, fig2_construct_en.png, fig3_main_en.png,
+fig4_rcs_en.png, fig5_biomarker_en.png"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import json, numpy as np, pandas as pd
 import matplotlib
 matplotlib.use("Agg")
@@ -82,13 +89,13 @@ ax.text(34, 17.6, "Interview batch: 2021, 8,113 participants / 372 events;  2022
         ha="center", va="center", fontsize=7.4, color="#5D6B7A")
 
 plt.tight_layout()
-plt.savefig("out/fig1_flow_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig1_flow_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 
 # =========================================================
 # Figure 2 — four outcome definitions (construct comparison)
 # =========================================================
-C = pd.read_csv("out/construct_precov.csv")
+C = pd.read_csv(os.path.join(OUT, "construct_precov.csv"))
 order = ["Depressive symptoms (CES-D \u226510)", "Metabolic comorbidity, any", "Metabolic comorbidity, 2+",
          "Dyslipidaemia", "Hypertension", "Diabetes", "Sleep <6 h", "Sleep \u22658 h",
          "Restless sleep", "Loneliness"]
@@ -122,13 +129,13 @@ for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
 ax.tick_params(axis="y", length=0)
 plt.tight_layout()
-plt.savefig("out/fig2_construct_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig2_construct_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 
 # =========================================================
 # Figure 3 — main forest plot (multiple imputation)
 # =========================================================
-mi = pd.read_csv("out/models_main_MI.csv")
+mi = pd.read_csv(os.path.join(OUT, "models_main_MI.csv"))
 mi["exposure"] = mi.exposure.replace({"\u5b64\u72ec\u611f\uff08\u7ecf\u5e38/\u603b\u662f\uff09": "\u5b64\u72ec\u611f"})
 rows = [
  ("Three-domain count \u22651", "\u4e09\u57df\u5171\u75c5 \u22651", True),
@@ -169,13 +176,13 @@ for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
 ax.tick_params(axis="y", length=0)
 plt.tight_layout()
-plt.savefig("out/fig3_main_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig3_main_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 
 # =========================================================
 # Figure 4 — restricted cubic splines
 # =========================================================
-rcs = json.load(open("out/rcs.json", encoding="utf-8"))
+rcs = json.load(open(os.path.join(OUT, "rcs.json"), encoding="utf-8"))
 cfg = [("\u6291\u90c1\u75c7\u72b6\u8bc4\u5206", "Depressive symptoms (CES-D score)", "CES-D score"),
        ("\u591c\u95f4\u7761\u7720", "Night-time sleep duration", "Hours"),
        ("\u5348\u7761", "Daytime napping", "Minutes"),
@@ -199,13 +206,13 @@ for ax, (k, title, xlab) in zip(axes.ravel(), cfg):
     if title.startswith("C-reactive"):
         ax.set_xticks([0, 1, 2, 3]); ax.set_xticklabels(["1", "2", "4", "8"])
 plt.tight_layout()
-plt.savefig("out/fig4_rcs_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig4_rcs_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 
 # =========================================================
 # Figure 5 — lagged biomarkers
 # =========================================================
-b = pd.read_csv("out/biomarker.csv")
+b = pd.read_csv(os.path.join(OUT, "biomarker.csv"))
 b = b[(b.model == "M3 +2015\u751f\u6d3b\u65b9\u5f0f/\u5065\u5eb7") & (~b.biomarker.str.contains("\u56db\u5206\u4f4d"))]
 MAP = {"CRP\uff08\u6bcf\u7ffb\u500d\uff09": "C-reactive protein, per doubling",
        "\u767d\u7ec6\u80de\uff08\u6bcf +1\u00d710\u2079/L\uff09": "White cell count, per 10\u2079/L",
@@ -237,7 +244,7 @@ for s in ["top", "right"]:
     ax.spines[s].set_visible(False)
 ax.tick_params(axis="y", length=0)
 plt.tight_layout()
-plt.savefig("out/fig5_biomarker_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig5_biomarker_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 
 print("done")

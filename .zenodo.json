@@ -1,7 +1,7 @@
 {
   "title": "Analysis code for: Metabolic multimorbidity and adiposity, and incident arthritis or rheumatism in middle-aged and older Chinese adults",
   "upload_type": "software",
-  "description": "Python analysis code for an instrument-defined incident arthritis/rheumatism cohort in CHARLS wave 6 (2021-2023). The study uses the survey's own skip pattern to separate genuinely new diagnoses from cumulative ever-diagnosed status, models incident disease with modified Poisson regression (community-clustered variance, multiple imputation, lagged 2015 BMI and blood biomarkers), compares incident and prevalent associations on a common risk-ratio scale, and replicates adiposity and metabolic multimorbidity findings in HRS, ELSA and MHAS. Includes cohort construction, main and sensitivity models, competing-risks construct comparison, dose-response and restricted cubic spline analyses, and figure generation. No respondent-level data are included.",
+  "description": "Python analysis code for an instrument-defined incident arthritis/rheumatism cohort in CHARLS wave 6 (2021-2023). The study uses the survey's own skip pattern to separate genuinely new diagnoses from cumulative ever-diagnosed status, models incident disease with modified Poisson regression (community-clustered variance, multiple imputation, lagged 2015 BMI and blood biomarkers), compares incident and prevalent associations on a common risk-ratio scale, and replicates adiposity and metabolic multimorbidity findings in HRS, ELSA and MHAS. Includes cohort construction, main and sensitivity models, competing-risks construct comparison, dose-response and restricted cubic spline analyses, and figure generation. No respondent-level data are included. Version 1.0.1 adds the two scripts that generate the construct-comparison result files, routes every output through W6_OUT, removes dead branches, and pins dependencies; all estimates are unchanged from 1.0.0.",
   "creators": [
     {
       "name": "Wang, Kai",
@@ -21,7 +21,7 @@
     "modified Poisson"
   ],
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "language": "eng",
   "access_right": "open"
 }

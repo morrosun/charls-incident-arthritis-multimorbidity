@@ -1,5 +1,16 @@
 # -*- coding: utf-8 -*-
-"""限制性立方样条（RCS）：手工构造样条基 + 手构设计矩阵，避免 patsy 预测错位"""
+"""Restricted cubic splines.
+
+The spline basis and the design matrix are built by hand, so that the grid and
+the reference point share the same knots as the observed data; the alternative
+(predicting from a patsy formula) misaligns the basis.
+
+Output: rcs.json, fig3_rcs.png"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, warnings, json, patsy
 from scipy import stats as st
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
@@ -10,7 +21,7 @@ for f_ in ["Microsoft YaHei","SimHei"]:
     except Exception: pass
 plt.rcParams["axes.unicode_minus"]=False
 
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
@@ -66,7 +77,7 @@ for v,ref,xlab,xlim,nm in CFG:
 def _j(v):
     return [float(x) for x in v] if isinstance(v,np.ndarray) else v
 json.dump({k:{kk:_j(vv) for kk,vv in v.items()} for k,v in curves.items()},
-          open("out/rcs.json","w",encoding="utf-8"),ensure_ascii=False,indent=1)
+          open(os.path.join(OUT, "rcs.json"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)
 fig,axes=plt.subplots(2,3,figsize=(11,6.4),dpi=300)
 for ax,(nm,c) in zip(axes.ravel(),curves.items()):
     ax.fill_between(c["x"],c["lo"],c["hi"],color="#9b2335",alpha=.13,lw=0)
@@ -78,5 +89,5 @@ for ax,(nm,c) in zip(axes.ravel(),curves.items()):
     for s in ["top","right"]: ax.spines[s].set_visible(False)
     if nm.startswith("CRP"):
         ax.set_xticks([0,1,2,3]); ax.set_xticklabels(["1","2","4","8"])
-plt.tight_layout(); plt.savefig("out/fig3_rcs.png",bbox_inches="tight"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig3_rcs.png"),bbox_inches="tight"); plt.close()
 print("saved")

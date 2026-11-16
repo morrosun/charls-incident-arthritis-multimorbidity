@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""加入社区聚类稳健标准误（W6 Demographics 含 communityID，346 个社区）"""
+"""Primary model with community-clustered robust variance.
+
+Adds communityID from the wave-6 Demographics files to analytic.csv (an
+idempotent read-modify-write), then fits modified Poisson models with a free
+log follow-up term and interview-year fixed effects for every exposure.
+
+Output: analytic.csv, models_main_cluster.csv, models_joint_cluster.csv,
+trend.json"""
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os
@@ -18,9 +25,9 @@ for yr in ["2021","2022","2023"]:
     d,_=pyreadstat.read_dta(f"{CHARLS_RAW}/{yr}/Demographics.dta",usecols=["ID","communityID"])
     fr.append(d)
 cid=pd.concat(fr).drop_duplicates("ID")
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d=d[[c for c in d.columns if not c.startswith("communityID")]].merge(cid,on="ID",how="left")
-d.to_csv("out/analytic.csv",index=False,encoding="utf-8-sig")
+d.to_csv(os.path.join(OUT, "analytic.csv"),index=False,encoding="utf-8-sig")
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
@@ -66,7 +73,7 @@ for lab,term,extra in SPEC:
     r,n,ev,nc=fit(m,[term],extra)
     b,se,p=r.params[term],r.bse[term],r.pvalues[term]
     rows.append(dict(exposure=lab,term=term,n=n,events=ev,nclust=nc,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-R=pd.DataFrame(rows); R.to_csv("out/models_main_cluster.csv",index=False,encoding="utf-8-sig")
+R=pd.DataFrame(rows); R.to_csv(os.path.join(OUT, "models_main_cluster.csv"),index=False,encoding="utf-8-sig")
 print("社区数:", R.nclust.max())
 print(R[["exposure","n","events","RR","lo","hi","p"]].round(3).to_string(index=False))
 # 联合
@@ -79,10 +86,10 @@ m["d_x_m"]=m.depress_b*m.metab_b
 r2,n2,ev2,nc2=fit(m,["depress_b","metab_b","d_x_m"],[])
 b,se,p=r2.params["d_x_m"],r2.bse["d_x_m"],r2.pvalues["d_x_m"]
 jr.append(dict(group="乘法交互",n=n2,events=ev2,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-pd.DataFrame(jr).to_csv("out/models_joint_cluster.csv",index=False,encoding="utf-8-sig")
+pd.DataFrame(jr).to_csv(os.path.join(OUT, "models_joint_cluster.csv"),index=False,encoding="utf-8-sig")
 print("\n联合:"); print(pd.DataFrame(jr).round(3).to_string(index=False))
 r3,n3,ev3,nc3=fit(m,["pms_n"],[])
 b,se,p=r3.params["pms_n"],r3.bse["pms_n"],r3.pvalues["pms_n"]
 print(f"\n趋势 每+1: RR={np.exp(b):.3f} ({np.exp(b-1.96*se):.3f}-{np.exp(b+1.96*se):.3f}) p={p:.4f}")
 json.dump(dict(n=int(n3),events=int(ev3),nclust=int(nc3),rr=float(np.exp(b)),lo=float(np.exp(b-1.96*se)),hi=float(np.exp(b+1.96*se)),p=float(p)),
-          open("out/trend.json","w",encoding="utf-8"),ensure_ascii=False,indent=1)
+          open(os.path.join(OUT, "trend.json"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)

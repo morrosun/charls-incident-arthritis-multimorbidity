@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""2015(w3) 血检滞后暴露 → 2020-2023 新发关节炎/风湿病"""
+"""Lagged 2015 blood assays and BMI as predictors of incident disease.
+
+Four nested adjustment sets, from age and sex to the full 2015 lifestyle and
+health set plus 2020 metabolic comorbidity.
+
+Output: biomarker.csv"""
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os
@@ -18,7 +23,7 @@ f=os.environ.get("CHARLS_WORK", os.path.join(ROOT, "data", "working", "charls.dt
 vs=["ID","wave","age","adlab_c","iadl","srh","chronic_num","smokev","drinkl","totmet","raeducl","marry","rural2","bmi"]
 ch,_=pyreadstat.read_dta(f,usecols=vs)
 w3=ch[ch.wave==3].drop(columns=["wave","bmi"]).rename(columns={c:c+"_w3" for c in vs if c not in ("ID","wave","bmi")})
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str}).merge(w3,on="ID",how="left")
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str}).merge(w3,on="ID",how="left")
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
@@ -85,7 +90,7 @@ for v,lab in [("crp_q","CRP 四分位"),("ua_q","尿酸四分位"),("wbc_q","白
         b,se,p=r.params[t],r.bse[t],r.pvalues[t]
         rows.append(dict(biomarker=f"{lab} {lev} vs Q1",var=v,model="M3 +2015生活方式/健康",n=len(X),
                          events=int(X.incident.sum()),RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-R=pd.DataFrame(rows); R.to_csv("out/biomarker.csv",index=False,encoding="utf-8-sig")
+R=pd.DataFrame(rows); R.to_csv(os.path.join(OUT, "biomarker.csv"),index=False,encoding="utf-8-sig")
 print("\n=== 2015 血检 → 新发 ===")
 print(R[R.model=="M3 +2015生活方式/健康"][["biomarker","n","events","RR","lo","hi","p"]].round(3).to_string(index=False))
 print("\n=== M4（再加 2020 代谢共病）===")

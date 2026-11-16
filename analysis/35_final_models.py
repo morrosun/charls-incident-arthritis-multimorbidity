@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
-"""最终主分析：改良 Poisson（随访时长作为自由协变量，不强制 offset）"""
+"""Primary models with follow-up duration as a free covariate - SUPERSEDED by
+38_cluster.py, which adds community-clustered variance.
+
+Kept to document the three nested adjustment sets. No downstream script reads
+its output except the Chinese-language figure 36_figs.py."""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json
 warnings.filterwarnings("ignore")
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
@@ -61,11 +70,11 @@ for lab,term,extra in SPEC:
     extra=[e for e in extra if e!=term]
     for mod in ["M1","M2","M3"]:
         if mod=="M1": r,n,ev=fit(m,[term],[],year=False)
-        elif mod=="M2": r,n,ev=fit(m,[term,[],] if False else [],year=True) if False else fit(m,[term],[],year=True)
+        elif mod=="M2": r,n,ev=fit(m,[term],[],year=True)
         else: r,n,ev=fit(m,[term],extra,year=True)
         b,se,p=r.params[term],r.bse[term],r.pvalues[term]
         rows.append(dict(exposure=lab,term=term,model=mod,n=n,events=ev,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-res=pd.DataFrame(rows); res.to_csv("out/models_main.csv",index=False,encoding="utf-8-sig")
+res=pd.DataFrame(rows); res.to_csv(os.path.join(OUT, "models_main.csv"),index=False,encoding="utf-8-sig")
 v=res[res.model=="M3"].copy(); v["p"]=v.p.map(lambda x:f"{x:.3f}")
 print("=== M3 最终 ==="); print(v[["exposure","n","events","RR","lo","hi","p"]].round(3).to_string(index=False))
 
@@ -79,7 +88,7 @@ m["d_x_m"]=m.depress_b*m.metab_b
 r2,n2,ev2=fit(m,["depress_b","metab_b","d_x_m"],[])
 b,se,p=r2.params["d_x_m"],r2.bse["d_x_m"],r2.pvalues["d_x_m"]
 jr.append(dict(group="乘法交互",n=n2,events=ev2,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-pd.DataFrame(jr).to_csv("out/models_joint.csv",index=False,encoding="utf-8-sig")
+pd.DataFrame(jr).to_csv(os.path.join(OUT, "models_joint.csv"),index=False,encoding="utf-8-sig")
 print("\n=== 联合 2×2 ==="); print(pd.DataFrame(jr).round(3).to_string(index=False))
 
 # 趋势
@@ -87,4 +96,4 @@ r3,n3,ev3=fit(m,["pms_n"],[])
 b,se,p=r3.params["pms_n"],r3.bse["pms_n"],r3.pvalues["pms_n"]
 print(f"\n三域计数 每+1: RR={np.exp(b):.3f} ({np.exp(b-1.96*se):.3f}-{np.exp(b+1.96*se):.3f}) p={p:.4f} n={n3} ev={ev3}")
 json.dump(dict(n=int(n3),events=int(ev3),rr=float(np.exp(b)),lo=float(np.exp(b-1.96*se)),hi=float(np.exp(b+1.96*se)),p=float(p)),
-          open("out/trend.json","w",encoding="utf-8"),ensure_ascii=False,indent=1)
+          open(os.path.join(OUT, "trend.json"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)

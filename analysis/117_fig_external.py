@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 """Figure 6: four-cohort external validation forest plot (two panels)"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -17,8 +22,8 @@ plt.rcParams["axes.unicode_minus"] = False
 
 RED = "#9B2335"; GREY = "#7B8794"; INK = "#26303B"
 
-R = pd.read_csv("out/ext_models.csv")
-M = pd.read_csv("out/ext_meta.csv")
+R = pd.read_csv(os.path.join(OUT, "ext_models.csv"))
+M = pd.read_csv(os.path.join(OUT, "ext_meta.csv"))
 R = R[R["sample"] == "all transitions"]
 
 PANELS = [
@@ -96,6 +101,6 @@ for k, (lab, cohorts, title) in enumerate(PANELS):
     ax.tick_params(axis="y", length=0)
     ax.tick_params(axis="x", length=3, color="#9AA6B2")
 
-plt.savefig("out/fig6_external_en.png", bbox_inches="tight", facecolor="white")
+plt.savefig(os.path.join(OUT, "fig6_external_en.png"), bbox_inches="tight", facecolor="white")
 plt.close()
 print("saved out/fig6_external_en.png")

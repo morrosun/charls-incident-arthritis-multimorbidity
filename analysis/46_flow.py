@@ -1,5 +1,9 @@
-# -*- coding: utf-8 -*-
 """Participant flow figure (v2)"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
@@ -59,5 +63,5 @@ ax.text(34,18.0,"随访 15,357 人年 ｜ 发病密度 3.54 / 100 人年",ha="ce
 ax.text(34,12.4,"访谈批次：2021 年 8,113 人 / 372 例；2022 年 2,046 / 94；2023 年 1,051 / 77",
         ha="center",va="center",fontsize=8.2,color="#5d6b7a")
 
-plt.tight_layout(); plt.savefig("out/fig0_flow.png",bbox_inches="tight",facecolor="white"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig0_flow.png"),bbox_inches="tight",facecolor="white"); plt.close()
 print("saved")

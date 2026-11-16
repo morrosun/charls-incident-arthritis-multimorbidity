@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
-"""主分析：三域暴露 -> 新发关节炎/风湿病（Poisson + log(随访) offset，稳健 SE = 改良 Poisson）"""
+"""Early primary models - SUPERSEDED, retained for provenance.
+
+This version used an offset for follow-up and HC0 variance. The final analysis
+uses a free log follow-up term with community-clustered variance (38_cluster.py)
+and multiple imputation (40_mi.py). No downstream script reads its output."""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings
 warnings.filterwarnings("ignore")
-d = pd.read_csv("out/analytic_raw.csv", dtype={"ID":str})
+d = pd.read_csv(os.path.join(OUT, "analytic_raw.csv"), dtype={"ID":str})
 d["ziw_year"] = pd.to_numeric(d.ziwtime2.astype(str).str[:4], errors="coerce")
 d["in_main"] = ((d.at_risk==1) & (d.ziw_year==2020) & d.age_base.between(45,95)).astype(int)
 m = d[d.in_main==1].copy()
@@ -59,10 +68,8 @@ def fit(df, terms, extra):
 rows=[]
 for label, terms, extra in SPEC:
     extra = [e for e in extra if e not in terms]
-    for mod, ex in [("M1 粗模型",[]),("M2 +人口学",[]),("M3 +生活方式/健康/另两域",extra)]:
-        if mod=="M1 粗模型":   r,n,ev = fit(m, terms, [])
-        elif mod=="M2 +人口学": r,n,ev = fit(m, terms, [])
-        else:                   r,n,ev = fit(m, terms, ex)
+    for mod in ["M1 粗模型","M2 +人口学","M3 +生活方式/健康/另两域"]:
+        r,n,ev = fit(m, terms, [] if mod!="M3 +生活方式/健康/另两域" else ex)
         if r is None: continue
         # 主项：最后一次出现（互调模型中取第2个）
         t = terms[-1]
@@ -73,7 +80,7 @@ for label, terms, extra in SPEC:
                          RR=np.exp(b), lo=np.exp(b-1.96*se), hi=np.exp(b+1.96*se), p=p))
 res = pd.DataFrame(rows)
 res["RR_CI"] = res.apply(lambda r: f"{r.RR:.2f} ({r.lo:.2f}–{r.hi:.2f})", axis=1)
-res.to_csv("out/results_incident.csv", index=False, encoding="utf-8-sig")
+res.to_csv(os.path.join(OUT, "results_incident.csv"), index=False, encoding="utf-8-sig")
 print(f"主样本 n={len(m)}, events={int(m.incident.sum())}\n")
 pv = res[res.model=="M3 +生活方式/健康/另两域"].copy()
 pv["p"]=pv.p.map(lambda x: f"{x:.3f}")

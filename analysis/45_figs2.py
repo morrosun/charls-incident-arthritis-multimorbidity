@@ -1,4 +1,8 @@
-# -*- coding: utf-8 -*-
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from matplotlib import font_manager
@@ -6,7 +10,7 @@ for f_ in ["Microsoft YaHei","SimHei"]:
     try: font_manager.findfont(f_,fallback_to_default=False); plt.rcParams["font.sans-serif"]=[f_]; break
     except Exception: pass
 plt.rcParams["axes.unicode_minus"]=False
-mi=pd.read_csv("out/models_main_MI.csv")
+mi=pd.read_csv(os.path.join(OUT, "models_main_MI.csv"))
 mi["exposure"]=mi.exposure.replace({"孤独感（经常/总是）":"孤独感"})
 lab=["三域共病 ≥1","三域共病 ≥2","三域共病 1","三域共病 2","三域共病 3",
      "抑郁症状（CES-D≥10）","代谢共病 ≥2 项","血脂异常","高血压","糖尿病",
@@ -26,10 +30,10 @@ ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 ax.set_xlabel("相对危险度 RR（95% CI，对数刻度）",fontsize=9)
 for s in ["top","right"]: ax.spines[s].set_visible(False)
 ax.tick_params(axis="y",length=0)
-plt.tight_layout(); plt.savefig("out/fig2_main.png",bbox_inches="tight"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig2_main_mi.png"),bbox_inches="tight"); plt.close()
 
 # 血检森林图
-b=pd.read_csv("out/biomarker.csv")
+b=pd.read_csv(os.path.join(OUT, "biomarker.csv"))
 b=b[(b.model=="M3 +2015生活方式/健康")&(~b.biomarker.str.contains("四分位"))]
 order=["CRP（每翻倍）","白细胞（每 +1×10⁹/L）","HbA1c（每 +1%）","空腹血糖（每 +10 mg/dL）",
        "尿酸（每 +1 mg/dL）","TG/HDL 比值（每 +1 log）","BMI（每 +5 kg/m²）"]
@@ -48,5 +52,5 @@ ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 ax.set_xlabel("RR（95% CI，对数刻度）",fontsize=9)
 for s in ["top","right"]: ax.spines[s].set_visible(False)
 ax.tick_params(axis="y",length=0)
-plt.tight_layout(); plt.savefig("out/fig4_biomarker.png",bbox_inches="tight"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig4_biomarker.png"),bbox_inches="tight"); plt.close()
 print("ok")

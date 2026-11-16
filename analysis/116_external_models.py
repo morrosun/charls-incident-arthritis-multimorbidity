@@ -1,5 +1,17 @@
 # -*- coding: utf-8 -*-
-"""外部验证：HRS / ELSA / MHAS + CHARLS 四队列，同一暴露定义、同一协变量集"""
+"""External validation in HRS, ELSA, MHAS and CHARLS.
+
+One exposure definition and one covariate set per cohort, fitted separately
+and pooled with DerSimonian-Laird random effects. Anthropometric measures are
+pooled only across cohorts with measured height and weight; MHAS self-reported
+BMI is reported separately.
+
+Output: ext_models.csv, ext_meta.csv, ext_meta.json"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, math, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json
 warnings.filterwarnings("ignore")
 
@@ -31,7 +43,7 @@ def fit(df, exposure, cohort):
 
 rows = []
 for coh in ["HRS", "ELSA", "MHAS"]:
-    df = pd.read_csv(f"out/ext_{coh}.csv", dtype={"ID": str})
+    df = pd.read_csv(fos.path.join(OUT, "ext_{coh}.csv"), dtype={"ID": str})
     df["yr"] = df["yr"].astype(str)
     for exp, lab in [("metab", "Metabolic comorbidity (hypertension or diabetes)"),
                      ("bmi5", "Body mass index, per 5 kg/m2"),
@@ -55,7 +67,7 @@ for coh in ["HRS", "ELSA", "MHAS"]:
                   f"RR={res['RR']:.2f} ({res['lo']:.2f}-{res['hi']:.2f}) p={res['p']:.3f} prev={res['prev']:.2f}")
 
 # ---------- CHARLS 同定义 ----------
-d = pd.read_csv("out/analytic.csv", dtype={"ID": str})
+d = pd.read_csv(os.path.join(OUT, "analytic.csv"), dtype={"ID": str})
 d["z"] = pd.to_numeric(d.ziwtime2.astype(str).str[:4], errors="coerce")
 d["iy"] = pd.to_numeric(d.iyear, errors="coerce")
 m = d[(d.at_risk == 1) & (d.z == 2020) & d.age_base.between(45, 95)].copy()
@@ -91,7 +103,7 @@ for exp, lab in [("metab", "Metabolic comorbidity (hypertension or diabetes)"),
               f"RR={res['RR']:.2f} ({res['lo']:.2f}-{res['hi']:.2f}) p={res['p']:.3f}")
 
 R = pd.DataFrame(rows)
-R.to_csv("out/ext_models.csv", index=False, encoding="utf-8-sig")
+R.to_csv(os.path.join(OUT, "ext_models.csv"), index=False, encoding="utf-8-sig")
 
 # ---------- 随机效应合并（DerSimonian-Laird）----------
 def dl(df):
@@ -121,6 +133,6 @@ for lab, g in Rpool.groupby("exposure_label"):
           f"p={s['p']:.4f} I2={s['I2']:.1f}%")
 
 M = pd.DataFrame(meta)
-M.to_csv("out/ext_meta.csv", index=False, encoding="utf-8-sig")
-json.dump(meta, open("out/ext_meta.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+M.to_csv(os.path.join(OUT, "ext_meta.csv"), index=False, encoding="utf-8-sig")
+json.dump(meta, open(os.path.join(OUT, "ext_meta.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("\nsaved")

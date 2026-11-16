@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""构建 HRS / ELSA / MHAS 的"波次 t → t+1 新发"外部验证队列"""
+"""Build the wave t to t+1 incident transitions in HRS, ELSA and MHAS.
+
+Risk set: free of arthritis at t, with a next interview 1.0-4.5 years later.
+Successive available interviews are used, so a skipped wave is allowed; the
+interval is carried into the model as an offset.
+
+Output: ext_HRS.csv, ext_ELSA.csv, ext_MHAS.csv, ext_summary.csv"""
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os
@@ -13,7 +19,6 @@ MHAS_FILE = os.environ.get("MHAS_FILE", os.path.join(ROOT, "data", "working", "m
 
 import pyreadstat, pandas as pd, numpy as np, os
 
-OUT = "out"
 os.makedirs(OUT, exist_ok=True)
 
 SPEC = {

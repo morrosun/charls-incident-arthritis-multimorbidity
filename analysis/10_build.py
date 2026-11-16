@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-"""CHARLS W6 真·新诊断发病队列：建库脚本
-输出: out/analytic.csv, out/build_log.txt
-"""
+"""Build the instrument-defined incident cohort.
+
+Links the three wave-6 annual packages, resolves the 974 duplicate records to
+the latest release of the same interview, applies the survey skip pattern to
+separate incident from prevalent disease, and attaches wave-5 (2020) exposures
+and wave-3 (2015) anthropometry and blood assays.
+
+Output: analytic_raw.csv, build_log.txt"""
 # Portable paths: point these environment variables at your local copies of the
 # restricted source data (CHARLS / HRS / ELSA / MHAS). No source data is shipped.
 import os

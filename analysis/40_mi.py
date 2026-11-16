@@ -1,28 +1,40 @@
 # -*- coding: utf-8 -*-
-"""20 次多重插补（MICE, BayesianRidge + 后验抽样）→ 主模型 Rubin 合并"""
+"""Twenty multiple imputations, then Rubin combination of the primary models.
+
+Chained equations with Bayesian ridge regression and posterior sampling
+(20 imputations, 15 iterations); community-clustered variance within each
+imputation; Rubin rules across imputations, with the fraction of missing
+information reported.
+
+Output: models_main_MI.csv, models_joint_MI.csv, trend_MI.json"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json, time
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.impute import IterativeImputer
 from sklearn.linear_model import BayesianRidge
 warnings.filterwarnings("ignore")
 
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 m=d[(d.at_risk==1)&(d.ziw_year==2020)&d.age_base.between(45,95)].copy()
 m["age"]=m.age_base; m["age2"]=m.age**2/100
 m["edu_c"]=m.edu.map({1:"Low",2:"Mid",3:"High"}); m["reg"]=m.region3.astype(str)
 m["logfu"]=np.log(m.fu_years.clip(0.25)); m["yr"]=m.iy.astype(int).astype(str)
-m["metab_n"]=m.metab_n
-m["oth"]=m.other_n
-for v in ["hibpe","diabe","dyslipe"]: m[v]=m[v]
+m["oth"] = m.other_n
 
 # 需要插补的原始变量（其余不缺失或缺失<0.2%）
 IMP=["cesd","lonely_f","satlife5","sleeprl4","srh5","sleep_h","nap_min",
      "smoke","drink","met","adl"]
-PRED=IMP+["incident","age","female","edu","married","rural","hibpe","diabe","dyslipe",
-          "oth","socwk","logfu","cecum" ] if False else IMP+["incident","age","female","edu","married","rural",
-          "hibpe","diabe","dyslipe","oth","socwk","logfu","region3","metab_n"]
+# The outcome is included in the imputation model, as recommended: omitting it
+# biases imputed covariates towards the unconditional mean.
+PRED = IMP + ["incident", "age", "female", "edu", "married", "rural",
+              "hibpe", "diabe", "dyslipe", "oth", "socwk", "logfu",
+              "region3", "metab_n"]
 base=m[PRED].copy()
 base["region3"]=base["region3"].astype("category").cat.codes.replace(-1,np.nan)
 for c in ["female","married","rural"]:
@@ -112,13 +124,11 @@ for lab,term,extra in SPEC:
     from scipy import stats as st
     p=2*st.t.sf(abs(q/sd),df) if np.isfinite(df) else 2*st.norm.sf(abs(q/sd))
     rows.append(dict(exposure=lab,term=term,n=int(np.mean(ns)),RR=np.exp(q),lo=np.exp(lo),hi=np.exp(hi),p=p,FMI=float(1-np.mean(np.array(ses)**2)/sd**2)))
-R=pd.DataFrame(rows); R.to_csv("out/models_main_MI.csv",index=False,encoding="utf-8-sig")
+R=pd.DataFrame(rows); R.to_csv(os.path.join(OUT, "models_main_MI.csv"),index=False,encoding="utf-8-sig")
 print("\n=== MI 合并（M=20）===")
 print(R[["exposure","n","RR","lo","hi","p","FMI"]].round(3).to_string(index=False))
 
-# 联合与趋势
-for nm,terms in [("joint",["dep_only","metab_only","both"]),("trend",["pms_n"]),("inter",["depress_b","metab_b","d_x_m"])]:
-    pass
+# Joint 2x2 decomposition and multiplicative interaction
 est=[];ses=[]
 for z in zlist:
     z["d_x_m"]=z.depress_b*z.metab_b
@@ -137,7 +147,7 @@ for z in zlist:
 q,sd,lo,hi,df=rubin(est,ses)
 from scipy import stats as st
 jr.append(dict(group="乘法交互",RR=np.exp(q),lo=np.exp(lo),hi=np.exp(hi),p=2*st.t.sf(abs(q/sd),df)))
-pd.DataFrame(jr).to_csv("out/models_joint_MI.csv",index=False,encoding="utf-8-sig")
+pd.DataFrame(jr).to_csv(os.path.join(OUT, "models_joint_MI.csv"),index=False,encoding="utf-8-sig")
 print("\n=== 联合（MI）==="); print(pd.DataFrame(jr).round(3).to_string(index=False))
 est=[];ses=[]
 for z in zlist:
@@ -145,4 +155,4 @@ for z in zlist:
 q,sd,lo,hi,df=rubin(est,ses)
 print(f"\n趋势（MI）：RR={np.exp(q):.3f} ({np.exp(lo):.3f}-{np.exp(hi):.3f}) p={2*st.t.sf(abs(q/sd),df):.4f}")
 json.dump(dict(rr=float(np.exp(q)),lo=float(np.exp(lo)),hi=float(np.exp(hi)),p=float(2*st.t.sf(abs(q/sd),df)),M=M_IMP),
-          open("out/trend_MI.json","w",encoding="utf-8"),ensure_ascii=False,indent=1)
+          open(os.path.join(OUT, "trend_MI.json"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)

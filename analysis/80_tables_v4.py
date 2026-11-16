@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-"""按修正后的数据重新生成英文表 1–4（markdown）"""
+"""Rebuild manuscript Tables 1-4 as markdown from the result files.
+
+Output: tables_v4.md"""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np
 from scipy import stats
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["z"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 m=d[(d.at_risk==1)&(d.z==2020)&d.age_base.between(45,95)].copy()
 m["age"]=m.age_base
@@ -47,7 +54,7 @@ for v,lab,kind in [("age_base","Age, years","m"),("female","Women, %","p"),("edu
 L.append("\nValues are mean ± SD or percentage. Continuous variables compared with Welch's t test, categorical with χ². Denominators vary slightly because of missing values.\n")
 
 # Table 2
-cc=pd.read_csv("out/models_main_cluster.csv"); mi=pd.read_csv("out/models_main_MI.csv")
+cc=pd.read_csv(os.path.join(OUT, "models_main_cluster.csv")); mi=pd.read_csv(os.path.join(OUT, "models_main_MI.csv"))
 cc["exposure"]=cc.exposure.replace({"孤独感（经常/总是）":"孤独感"}); mi["exposure"]=mi.exposure.replace({"孤独感（经常/总是）":"孤独感"})
 key=["三域共病，每 +1 域","三域共病 ≥1","三域共病 ≥2","三域共病 1","三域共病 2","三域共病 3",
      "抑郁症状（CES-D≥10）","CES-D（每+5分）","孤独感","生活不满意","无每月社交",
@@ -64,7 +71,7 @@ L.append("### Table 2. Multimorbidity domains and incident arthritis or rheumati
 L.append("| Exposure | Complete case, RR (95% CI) | P | Multiple imputation, RR (95% CI) | P |")
 L.append("|---|---:|---:|---:|---:|")
 import json as _json
-_t=pd.read_json("out/trend_MI.json",typ="series")
+_t=pd.read_json(os.path.join(OUT, "trend_MI.json"),typ="series")
 for k in key:
     if k=="三域共病，每 +1 域":
         r=cc[cc.exposure==k].iloc[0]
@@ -77,7 +84,7 @@ for k in key:
 L.append(f"\nComplete-case models: n = {int(cc.n.max()):,}, events = {int(cc.events.max())}. Imputed models: n = {int(mi.n.max()):,}, events = 543. All models adjusted for age, sex, education, marital status, rural residence, region, smoking, drinking, physical activity, non-rheumatic comorbidity count, ADL limitations, self-rated health, log follow-up and interview batch, with community-clustered robust variance. Domains are mutually adjusted within the single-domain models. The trend model is fitted with the count as a continuous term.\n")
 
 # Table 3
-b=pd.read_csv("out/biomarker.csv")
+b=pd.read_csv(os.path.join(OUT, "biomarker.csv"))
 b3=b[b.model=="M3 +2015生活方式/健康"].set_index("biomarker")
 b4=b[b.model=="M4 +2020代谢共病"].set_index("biomarker")
 order=["CRP（每翻倍）","白细胞（每 +1×10⁹/L）","HbA1c（每 +1%）","空腹血糖（每 +10 mg/dL）","尿酸（每 +1 mg/dL）","TG/HDL 比值（每 +1 log）","BMI（每 +5 kg/m²）"]
@@ -94,7 +101,7 @@ for k in order:
 L.append("\nModel 1 adjusted for 2015 age, sex, education, marital status, rural residence, region, smoking, drinking, chronic-condition count, ADL and self-rated health. Model 2 additionally adjusted for 2020 metabolic comorbidity. Blood assays: n = 5,491, 251 events; BMI: n = 6,513, 315 events.\n")
 
 # Table 4
-c=pd.read_csv("out/construct_precov.csv"); k2=pd.read_csv("out/construct_competing.csv")
+c=pd.read_csv(os.path.join(OUT, "construct_precov.csv")); k2=pd.read_csv(os.path.join(OUT, "construct_competing.csv"))
 piv=c.pivot_table(index="exposure",columns="outcome",values="RR")
 ord4=["抑郁症状（CES-D≥10）","代谢共病≥1","代谢共病≥2","血脂异常","高血压","糖尿病","睡眠<6h","睡眠≥8h","睡眠不安","孤独感"]
 EN4=dict(zip(ord4,["Depressive symptoms (CES-D ≥10)","Metabolic comorbidity, any","Metabolic comorbidity, 2+","Dyslipidaemia",
@@ -118,5 +125,5 @@ for _,r in k2.iterrows():
     if r.p_int<0.05: lab=f"**{lab}**"
     L.append(f"| {lab} | {r.ratio:.2f} | {pfmt(r.p_int)} |")
 L.append("\nPanel A fits the identical model to four outcome definitions; the four columns use different denominators, so the estimates are descriptive rather than formally comparable. Panel B provides the formal comparison: a single log-link model in which at-risk participants contribute an incident row and all participants contribute a prevalent row, with an exposure-by-outcome-type interaction; the tabulated quantity is exp(interaction), i.e. how many times larger the prevalent risk ratio is than the incident one. Only short sleep differs.\n")
-open("out/tables_v4.md","w",encoding="utf-8").write("\n".join(L))
+open(os.path.join(OUT, "tables_v4.md"),"w",encoding="utf-8").write("\n".join(L))
 print("\n".join(L)[:3000])

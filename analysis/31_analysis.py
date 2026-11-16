@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
-"""主分析（2020 基线 + 访谈年固定效应）"""
+"""Early primary models with interview-year fixed effects - SUPERSEDED.
+
+Retained to document the sequence of adjustment sets. The final analysis is
+38_cluster.py (complete case) and 40_mi.py (imputed)."""
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json
 warnings.filterwarnings("ignore")
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce").astype("Int64")
 
@@ -75,7 +83,7 @@ for label,term,extra in SPEC:
         b,se,p=r.params[t],r.bse[t],r.pvalues[t]
         rows.append(dict(exposure=label,term=t,model=mod,n=n,events=ev,
                          RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-res=pd.DataFrame(rows); res.to_csv("out/models_main.csv",index=False,encoding="utf-8-sig")
+res=pd.DataFrame(rows); res.to_csv(os.path.join(OUT, "models_main.csv"),index=False,encoding="utf-8-sig")
 
 # 联合 2x2
 m["grp"]=np.select([(m.depress_b==1)&(m.metab_b==1),(m.depress_b==0)&(m.metab_b==1),
@@ -93,7 +101,7 @@ m["d_x_m"]=m.depress_b*m.metab_b
 r2,n2,ev2=fit(m,["depress_b","metab_b","d_x_m"],[],year=True)
 b,se,p=r2.params["d_x_m"],r2.bse["d_x_m"],r2.pvalues["d_x_m"]
 jrows.append(dict(group=f"乘法交互项 RR={np.exp(b):.3f}",n=n2,events=ev2,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-pd.DataFrame(jrows).to_csv("out/models_joint.csv",index=False,encoding="utf-8-sig")
+pd.DataFrame(jrows).to_csv(os.path.join(OUT, "models_joint.csv"),index=False,encoding="utf-8-sig")
 
 # 趋势检验（三域计数 0-3）
 m["pms0_3"]=m.pms_n
@@ -108,4 +116,4 @@ print("\n=== 联合 2×2 ===")
 print(pd.DataFrame(jrows)[["group","n","events","RR","lo","hi","p"]].round(3).to_string(index=False))
 print("\n=== 三域计数趋势 ===", {k:(round(v,3) if isinstance(v,float) else v) for k,v in trend.items()})
 json.dump(dict(n_main=int(len(m)),events=int(m.incident.sum()),trend=trend),
-          open("out/key_numbers.json","w",encoding="utf-8"),ensure_ascii=False,indent=1,default=float)
+          open(os.path.join(OUT, "key_numbers.json"),"w",encoding="utf-8"),ensure_ascii=False,indent=1,default=float)

@@ -1,4 +1,8 @@
-# -*- coding: utf-8 -*-
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings, json
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -10,7 +14,7 @@ for f in ["Microsoft YaHei","SimHei","SimSun"]:
     except Exception: pass
 plt.rcParams["axes.unicode_minus"]=False
 
-d=pd.read_csv("out/analytic.csv",dtype={"ID":str})
+d=pd.read_csv(os.path.join(OUT, "analytic.csv"),dtype={"ID":str})
 d["ziw_year"]=pd.to_numeric(d.ziwtime2.astype(str).str[:4],errors="coerce")
 d["iy"]=pd.to_numeric(d.iyear,errors="coerce")
 d["core"]=d.status.isin(["incident","atrisk_noevent","prevalent_baseline"])
@@ -54,7 +58,7 @@ for lab,term,extra in SPEC:
             r,n,ev=fit(df,[term],extra)
         b,se,p=r.params[term],r.bse[term],r.pvalues[term]
         rows.append(dict(exposure=lab,outcome=oname,n=n,cases=ev,RR=np.exp(b),lo=np.exp(b-1.96*se),hi=np.exp(b+1.96*se),p=p))
-C=pd.DataFrame(rows); C.to_csv("out/construct.csv",index=False,encoding="utf-8-sig")
+C=pd.DataFrame(rows); C.to_csv(os.path.join(OUT, "construct.csv"),index=False,encoding="utf-8-sig")
 piv=C.pivot_table(index="exposure",columns="outcome",values="RR")
 order=["A 新发","B 现患 2020","C 累计 ever","D 传统 ever(w5)"]
 piv=piv[order]
@@ -78,10 +82,10 @@ ax.set_xlabel("相对危险度 RR（对数刻度）",fontsize=9)
 ax.legend(fontsize=8,frameon=False,ncol=4,loc="upper center",bbox_to_anchor=(0.5,1.12))
 for s in ["top","right"]: ax.spines[s].set_visible(False)
 ax.tick_params(axis="y",length=0)
-plt.tight_layout(); plt.savefig("out/fig1_construct.png",bbox_inches="tight"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig1_construct.png"),bbox_inches="tight"); plt.close()
 
 # ---- 图2：三域主结果 ----
-mm=pd.read_csv("out/models_main.csv")
+mm=pd.read_csv(os.path.join(OUT, "models_main.csv"))
 v=mm[(mm.model=="M3")&(mm.exposure.isin(["抑郁症状（CES-D≥10）","代谢共病 ≥2 项","血脂异常","高血压","糖尿病","睡眠 <6h","睡眠 ≥8h","睡眠不安","孤独感","三域共病 1","三域共病 2","三域共病 3","三域共病 ≥1","三域共病 ≥2"]))]
 lab2=["三域共病 ≥1","三域共病 ≥2","三域共病 1","三域共病 2","三域共病 3","抑郁症状（CES-D≥10）","代谢共病 ≥2 项","血脂异常","高血压","糖尿病","孤独感","睡眠 <6h","睡眠 ≥8h","睡眠不安"]
 v=v.set_index("exposure").reindex(lab2).reset_index()
@@ -99,5 +103,5 @@ ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 ax.set_xlabel("相对危险度 RR（95% CI，对数刻度）",fontsize=9)
 for s in ["top","right"]: ax.spines[s].set_visible(False)
 ax.tick_params(axis="y",length=0)
-plt.tight_layout(); plt.savefig("out/fig2_main.png",bbox_inches="tight"); plt.close()
+plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig2_main.png"),bbox_inches="tight"); plt.close()
 print("figs saved")

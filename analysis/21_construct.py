@@ -1,10 +1,23 @@
 # -*- coding: utf-8 -*-
-"""构念对照：同一暴露、同一协变量，四种结局定义
- A incident(2020->W6 新发) | B prevalent(2020 现患, W6 gate) | C ever(W6 累计) | D arthre(w5 传统)
+"""Exploratory four-construct comparison - SUPERSEDED by 22_construct_precov.py.
+
+This early version used an offset for follow-up and HC0 variance, and adjusted
+for post-outcome covariates (self-rated health, ADL, comorbidity count). The
+analysis reported in the paper uses pre-outcome covariates only and
+community-clustered variance, as implemented in `22_construct_precov.py`. This
+script is kept so that the earlier specification is not lost, and it produces
+no input for any downstream step.
+
+ A incident(2020->W6 new) | B prevalent(2020, W6 gate) | C ever(W6 cumulative) | D arthre(w5 conventional)
 """
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get("W6_OUT", os.path.join(ROOT, "out"))
+os.makedirs(OUT, exist_ok=True)
+
 import pandas as pd, numpy as np, statsmodels.api as sm, statsmodels.formula.api as smf, warnings
 warnings.filterwarnings("ignore")
-d = pd.read_csv("out/analytic_raw.csv", dtype={"ID":str})
+d = pd.read_csv(os.path.join(OUT, "analytic_raw.csv"), dtype={"ID":str})
 d["ziw_year"] = pd.to_numeric(d.ziwtime2.astype(str).str[:4], errors="coerce")
 d["core"] = d.status.isin(["incident","atrisk_noevent","prevalent_baseline"]).astype(int)
 d["baseok"] = (d.ziw_year==2020) & d.age_base.between(45,95)
@@ -54,7 +67,7 @@ for label,term,extra in SPEC:
         rows.append(dict(exposure=label, outcome=oname, n=len(X), events=int(X[y].sum()),
                          rate=100*X[y].mean(), RR=np.exp(b), lo=np.exp(b-1.96*se), hi=np.exp(b+1.96*se), p=r.pvalues[term]))
 res=pd.DataFrame(rows)
-res.to_csv("out/results_construct.csv", index=False, encoding="utf-8-sig")
+res.to_csv(os.path.join(OUT, "results_construct.csv"), index=False, encoding="utf-8-sig")
 piv=res.pivot_table(index="exposure", columns="outcome", values="RR")
 piv=piv[["A 新发（2020→2021/23）","B 现患（2020 基线）","C 累计 ever（W6）","D 传统 ever（w5 arthre）"]]
 print("=== RR 对照（同一模型、同一协变量） ===")
