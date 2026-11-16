@@ -16,12 +16,12 @@ lab=["抑郁症状","代谢共病≥1","代谢共病≥2","血脂异常","高血
 piv=C.pivot_table(index="exposure",columns="outcome",values="RR").reindex(order)
 LO=C.pivot_table(index="exposure",columns="outcome",values="lo").reindex(order)
 HI=C.pivot_table(index="exposure",columns="outcome",values="hi").reindex(order)
-OUT=["A 新发","B 现患 2020","C 累计 ever","D 传统 ever"]
+OUTCOMES=["A 新发","B 现患 2020","C 累计 ever","D 传统 ever"]
 col={"A 新发":"#9b2335","B 现患 2020":"#7F8C8D","C 累计 ever":"#2980B9","D 传统 ever":"#8E44AD"}
 off={"A 新发":0.27,"B 现患 2020":0.09,"C 累计 ever":-0.09,"D 传统 ever":-0.27}
 fig,ax=plt.subplots(figsize=(7.2,5.4),dpi=300)
 y=np.arange(len(order))[::-1]
-for o in OUT:
+for o in OUTCOMES:
     rr=piv[o].values; lo=LO[o].values; hi=HI[o].values
     ax.errorbar(rr,y+off[o],xerr=[rr-lo,hi-rr],fmt="o",ms=4.0,lw=1.0,capsize=0,color=col[o],label=o,alpha=.95)
 ax.axvline(1,color="#7b8794",lw=.8,ls="--")

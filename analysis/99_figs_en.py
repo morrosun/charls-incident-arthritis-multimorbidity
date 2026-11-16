@@ -64,28 +64,40 @@ def side(y, text, xt=55.5):
             bbox=dict(boxstyle="round,pad=0.36", fc="#FAFBFC", ec="#E3E8EE", lw=0.7))
 
 W = 33.5
-box(34, 94.0, W, 9.2, "CHARLS 2021\u20132023 annual packages", "19,021 interview records")
+# All counts come from flow_counts.json, written by 10_build.py; nothing is typed in.
+F = json.load(open(os.path.join(OUT, "flow_counts.json"), encoding="utf-8"))
+_BATCH = ";  ".join(
+    "%d, %s participants / %s events" % (b["year"], format(b["n"], ","), b["events"])
+    for b in F["batches"])
+box(34, 94.0, W, 9.2, "CHARLS 2021\u20132023 annual packages",
+    "%s interview records" % format(F["source_records"], ","))
 arrow(89.4, 85.4)
-box(34, 81.2, W, 8.0, "18,047 unique participants")
-side(81.2, "974 duplicate records excluded\n(same interview, re-released;\n877 participants)")
+box(34, 81.2, W, 8.0, "%s unique participants" % format(F["unique_participants"], ","))
+side(81.2, "%s duplicate records excluded\n(same interview, re-released;\n%s participants)"
+     % (format(F["duplicate_records"], ","), format(F["duplicate_ids"], ",")))
 arrow(77.2, 73.4)
-box(34, 69.2, W, 8.0, "18,021 with determinable status")
-side(69.2, "26 excluded\n(neither item answered)")
+box(34, 69.2, W, 8.0, "%s with determinable status" % format(F["determinable"], ","))
+side(69.2, "%s excluded\n(neither item answered)" % F["neither_item_answered"])
 arrow(65.2, 61.4)
-box(34, 57.0, W, 9.2, "At risk: free at previous interview", "12,062")
-side(57.0, "5,959 prevalent at baseline\n(construct comparison only)")
+box(34, 57.0, W, 9.2, "At risk: free at previous interview", format(F["at_risk"], ","))
+side(57.0, "%s prevalent at baseline\n(construct comparison only)"
+     % format(F["prevalent_baseline"], ","))
 arrow(52.4, 48.6)
-box(34, 43.4, W, 10.2, "Analytic sample", "11,210 participants",
+box(34, 43.4, W, 10.2, "Analytic sample", "%s participants" % format(F["analytic"], ","),
     fc="#FDF7F8", ec="#DCB0B7", lw=1.05, ss=12.2)
-side(43.4, "852 excluded\n746 last interview not in 2020\n106 aged <45 or >95 years")
+side(43.4, "%s excluded\n%s last interview not in 2020\n%s aged <45 or >95 years"
+     % (format(F["excluded_total"], ","), format(F["excluded_interview_not_2020"], ","),
+        F["excluded_age_outside_45_95"]))
 
 ax.add_patch(FancyArrowPatch((34, 38.3), (34, 33.0), arrowstyle="-", lw=0.7, color="#B8C3CF",
                              linestyle=(0, (3, 2)), zorder=1))
-ax.text(34, 29.4, "Incident arthritis or rheumatism: 543 (4.84%)", ha="center", va="center",
+ax.text(34, 29.4, "Incident arthritis or rheumatism: %s (%.2f%%)"
+        % (format(F["events"], ","), F["event_percent"]), ha="center", va="center",
         fontsize=10.0, color=RED, fontweight="bold")
-ax.text(34, 23.6, "Follow-up 15,357 person-years  |  incidence density 3.54 per 100 person-years",
+ax.text(34, 23.6, "Follow-up %s person-years  |  incidence density %.2f per 100 person-years"
+        % (format(F["person_years"], ","), F["incidence_density_per_100py"]),
         ha="center", va="center", fontsize=8.4, color=INK)
-ax.text(34, 17.6, "Interview batch: 2021, 8,113 participants / 372 events;  2022, 2,046 / 94;  2023, 1,051 / 77",
+ax.text(34, 17.6, "Interview batch: " + _BATCH,
         ha="center", va="center", fontsize=7.4, color="#5D6B7A")
 
 plt.tight_layout()
@@ -105,14 +117,14 @@ key = ["\u6291\u90c1\u75c7\u72b6\uff08CES-D\u226510\uff09", "\u4ee3\u8c22\u5171\
 piv = C.pivot_table(index="exposure", columns="outcome", values="RR").reindex(key)
 lo = C.pivot_table(index="exposure", columns="outcome", values="lo").reindex(key)
 hi = C.pivot_table(index="exposure", columns="outcome", values="hi").reindex(key)
-OUT = ["A \u65b0\u53d1", "B \u73b0\u60a3 2020", "C \u7d2f\u8ba1 ever", "D \u4f20\u7edf ever"]
+OUTCOMES = ["A \u65b0\u53d1", "B \u73b0\u60a3 2020", "C \u7d2f\u8ba1 ever", "D \u4f20\u7edf ever"]
 LEG = ["Incident (2020\u21922021/23)", "Prevalent (2020)", "Cumulative ever (wave 6)", "Conventional ever (arthre)"]
-COL = dict(zip(OUT, [RED, GREY, BLUE, PURPLE]))
-OFF = dict(zip(OUT, [0.27, 0.09, -0.09, -0.27]))
+COL = dict(zip(OUTCOMES, [RED, GREY, BLUE, PURPLE]))
+OFF = dict(zip(OUTCOMES, [0.27, 0.09, -0.09, -0.27]))
 
 fig, ax = plt.subplots(figsize=(7.2, 5.4), dpi=300)
 y = np.arange(len(key))[::-1]
-for o, lb, c in zip(OUT, LEG, [RED, GREY, BLUE, PURPLE]):
+for o, lb, c in zip(OUTCOMES, LEG, [RED, GREY, BLUE, PURPLE]):
     rr = piv[o].values; l = lo[o].values; h = hi[o].values
     ax.errorbar(rr, y + OFF[o], xerr=[rr - l, h - rr], fmt="o", ms=4.0, lw=1.0,
                 capsize=0, color=c, label=lb, alpha=0.95)

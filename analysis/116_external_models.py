@@ -43,7 +43,7 @@ def fit(df, exposure, cohort):
 
 rows = []
 for coh in ["HRS", "ELSA", "MHAS"]:
-    df = pd.read_csv(fos.path.join(OUT, "ext_{coh}.csv"), dtype={"ID": str})
+    df = pd.read_csv(os.path.join(OUT, "ext_%s.csv" % coh), dtype={"ID": str})
     df["yr"] = df["yr"].astype(str)
     for exp, lab in [("metab", "Metabolic comorbidity (hypertension or diabetes)"),
                      ("bmi5", "Body mass index, per 5 kg/m2"),

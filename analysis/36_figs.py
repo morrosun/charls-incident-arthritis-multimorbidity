@@ -45,11 +45,11 @@ SPEC=[("抑郁症状","depress_b",["metab_b","psleep_b"]),("代谢共病≥2","m
       ("糖尿病","diabe",["depress_b","psleep_b"]),("睡眠<6h","sl_short",["depress_b","metab_b","sl_long"]),
       ("睡眠≥8h","sl_long",["depress_b","metab_b","sl_short"]),("睡眠不安","poor_sleep",["depress_b","metab_b"]),
       ("孤独感","lonely",["metab_b","psleep_b"]),("CES-D 每+5","cesd5",["metab_b","psleep_b"])]
-OUT=[("A 新发","incident",A),("B 现患 2020","prevalent0",B),("C 累计 ever","ever_w6",B),("D 传统 ever(w5)","arthre5",B)]
+OUTCOMES=[("A 新发","incident",A),("B 现患 2020","prevalent0",B),("C 累计 ever","ever_w6",B),("D 传统 ever(w5)","arthre5",B)]
 rows=[]
 for lab,term,extra in SPEC:
     extra=[e for e in extra if e!=term]
-    for oname,y,df in OUT:
+    for oname,y,df in OUTCOMES:
         if y=="incident":
             r,n,ev=fit(df,[term],extra)
         else:

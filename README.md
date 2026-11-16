@@ -87,6 +87,11 @@ python analysis/117_fig_external.py    # Figure 6
 files and writes the file back; it is idempotent, and running it more than once is harmless.
 Figure scripts consume result files produced by the model scripts and write PNGs into `$W6_OUT`.
 
+`10_build.py` also writes `flow_counts.json`, which holds every count shown in the participant
+flow diagram (records, duplicates, at-risk set, exclusions, events, person-years, interview
+batches). `99_figs_en.py` and `46_flow.py` read that file, so the diagram cannot drift away from
+the data. No sample size is typed into a plotting script.
+
 Result CSVs carry the study's internal exposure labels (Chinese) as the `exposure` column;
 `80_tables_v4.py` holds the one-to-one mapping to the terms used in the manuscript.
 

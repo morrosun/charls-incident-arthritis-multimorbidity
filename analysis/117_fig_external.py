@@ -78,7 +78,9 @@ for k, (lab, cohorts, title) in enumerate(PANELS):
                 color=INK, fontweight=("bold" if last else "normal"))
 
     ax.set_xscale("log")
-    ax.set_xlim(0.82, 1.52)
+    # Keep the manuscript range, but never clip an interval that falls outside it.
+    ax.set_xlim(min(0.82, float(np.nanmin(lo)) * 0.98),
+                max(1.52, float(np.nanmax(hi)) * 1.02))
     ax.set_xticks([0.85, 1.0, 1.2, 1.4])
     ax.set_xticklabels(["0.85", "1.0", "1.2", "1.4"], fontsize=8.0)
     ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())

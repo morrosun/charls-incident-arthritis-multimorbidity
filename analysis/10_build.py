@@ -57,15 +57,17 @@ w6 = w6.merge(dm, on="ID", how="left")
 P("Demographics 覆盖: %d / %d" % (w6.xrage.notna().sum(), len(w6)))
 
 # ---------- 2. 去重 ----------
-# 优先级：da011 已回答（=风险集） > 访谈更晚 > 其他变量更全
+# Priority: da011 answered (= at risk) > later interview > more complete record.
 w6["answered"] = w6.da011_15_.notna().astype(int)
-# 877 个 ID 的重复记录均来自同一访谈（iyear/imonth 完全相同），属同一访谈的多次发布版本；
-# 因此以「最新发布包」为准（后续发布为更正版），answered 仅作同包内的次级排序。
+# The duplicated records all come from the same interview (identical iyear/imonth):
+# they are re-releases of one interview, so the latest annual package wins. The
+# `answered` flag only breaks ties within the same package.
 w6["_order"] = pd.to_numeric(w6["src"], errors="coerce").fillna(0)
 w6 = w6.sort_values(["ID","_order","answered"], ascending=[True,False,False])
 n_before = len(w6)
+dup_ids = int(w6.loc[w6.duplicated("ID", keep=False), "ID"].nunique())
 w6 = w6.drop_duplicates("ID", keep="first").drop(columns="_order")
-P("去重: %d -> %d（丢弃 %d 条重复记录）" % (n_before, len(w6), n_before-len(w6)))
+P("去重: %d -> %d（丢弃 %d 条重复记录，涉及 %d 个 ID）" % (n_before, len(w6), n_before-len(w6), dup_ids))
 
 # ---------- 3. 结局与风险集 ----------
 w6["status"] = np.select(
@@ -175,3 +177,39 @@ P("\n风险集(incl. W6 gate): %d, 事件 %d, 发生率 %.2f%%" % (d.at_risk.sum
 sub = d[(d.at_risk==1) & (d.fu_years.notna())]
 P("有随访时长者: %d, 事件 %d, 中位随访 %.2f 年" % (len(sub), sub.incident.sum(), sub.fu_years.median()))
 open(f"{OUT}/build_log.txt","w",encoding="utf-8").write(log.getvalue())
+
+# ---------- flow counts for the participant-flow figures ----------
+# 99_figs_en.py (English) and 46_flow.py (Chinese) read this file, so the numbers
+# in the flow diagram cannot drift away from the analysis.
+_zy = pd.to_numeric(d.ziwtime2.astype(str).str[:4], errors="coerce")
+_at = d[d.at_risk == 1].copy()
+_at["_zy"] = _zy.loc[_at.index]
+_an = _at[(_at._zy == 2020) & _at.age_base.between(45, 95)]
+_events = int(_an.incident.sum())
+_py = float(_an.fu_years.sum())
+_batches = (_an.assign(_yr=_an.iyear.astype("Int64"))
+              .groupby("_yr").agg(n=("ID", "size"), events=("incident", "sum")))
+flow = {
+    "source_records": int(n_before),
+    "unique_participants": int(len(d)),
+    "duplicate_records": int(n_before - len(d)),
+    "duplicate_ids": int(dup_ids),
+    "determinable": int((d.status != "unclassified").sum()),
+    "neither_item_answered": int((d.status == "unclassified").sum()),
+    "at_risk": int(len(_at)),
+    "prevalent_baseline": int((d.status == "prevalent_baseline").sum()),
+    "analytic": int(len(_an)),
+    "excluded_total": int(len(_at) - len(_an)),
+    "excluded_interview_not_2020": int((_at._zy != 2020).sum()),
+    "excluded_age_outside_45_95": int(((_at._zy == 2020) & ~_at.age_base.between(45, 95)).sum()),
+    "events": _events,
+    "event_percent": round(100 * _events / len(_an), 2),
+    "person_years": int(round(_py)),
+    "incidence_density_per_100py": round(100 * _events / _py, 2),
+    "batches": [{"year": int(y), "n": int(r.n), "events": int(r.events)}
+                for y, r in _batches.iterrows()],
+}
+import json
+with open(f"{OUT}/flow_counts.json", "w", encoding="utf-8") as fh:
+    json.dump(flow, fh, ensure_ascii=False, indent=1)
+P("\nflow_counts.json: " + json.dumps(flow, ensure_ascii=False))

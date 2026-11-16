@@ -36,31 +36,41 @@ def side(y,text,xt=70.5,excl=True):
             bbox=dict(boxstyle="round,pad=0.36",fc="#fafbfc",ec="#e3e8ee",lw=0.7))
 
 MAXW, MH = 35, 8.4
+# 所有计数来自 flow_counts.json（由 10_build.py 写出），不手写数字
+import json
+F = json.load(open(os.path.join(OUT, "flow_counts.json"), encoding="utf-8"))
+BATCH = "；".join("%d 年 %s 人 / %s 例" % (b["year"], format(b["n"], ","), b["events"])
+                 for b in F["batches"])
 # 1
-box(34,91.5,MAXW,9.6,"CHARLS 2021–2023 三年包","19,021 条访谈记录")
+box(34,91.5,MAXW,9.6,"CHARLS 2021–2023 三年包","%s 条访谈记录" % format(F["source_records"], ","))
 arrow(86.4,82.6)
 # 2
-box(34,78.3,MAXW,MH,"18,047 名唯一受访者")
-side(78.3,"排除 974 条重复记录\n（877 个 ID 在同一年度包内被重复发布）")
+box(34,78.3,MAXW,MH,"%s 名唯一受访者" % format(F["unique_participants"], ","))
+side(78.3,"排除 %s 条重复记录\n（%s 个 ID 在同一年度包内被重复发布）"
+     % (format(F["duplicate_records"], ","), format(F["duplicate_ids"], ",")))
 arrow(73.8,70.4)
 # 3
-box(34,66.1,MAXW,MH,"18,021 名可判定患病状态")
-side(66.1,"排除 26 例\n新发与患病两题皆缺")
+box(34,66.1,MAXW,MH,"%s 名可判定患病状态" % format(F["determinable"], ","))
+side(66.1,"排除 %s 例\n新发与患病两题皆缺" % F["neither_item_answered"])
 arrow(61.6,58.2)
 # 4
-box(34,53.9,MAXW,MH+1.0,"风险集：上次访问未患病","12,062 例")
-side(53.9,"基线现患 5,959 例\n（进入构念对照，不入发病分析）",excl=False)
+box(34,53.9,MAXW,MH+1.0,"风险集：上次访问未患病","%s 例" % format(F["at_risk"], ","))
+side(53.9,"基线现患 %s 例\n（进入构念对照，不入发病分析）" % format(F["prevalent_baseline"], ","),excl=False)
 arrow(49.2,45.8)
 # 5
-box(34,38.6,MAXW,11.2,"分析样本","11,210 人",fc="#fdf7f8",ec="#dcb0b7",lw=1.05,ss=12.4)
-side(38.6,"排除 852 例\n746 例上次访谈不在 2020 年\n106 例年龄 <45 或 >95 岁")
+box(34,38.6,MAXW,11.2,"分析样本","%s 人" % format(F["analytic"], ","),fc="#fdf7f8",ec="#dcb0b7",lw=1.05,ss=12.4)
+side(38.6,"排除 %s 例\n%s 例上次访谈不在 2020 年\n%s 例年龄 <45 或 >95 岁"
+     % (format(F["excluded_total"], ","), format(F["excluded_interview_not_2020"], ","),
+        F["excluded_age_outside_45_95"]))
 
 ax.add_patch(FancyArrowPatch((34,32.8),(34,27.4),arrowstyle="-",lw=0.7,color="#b8c3cf",
                              linestyle=(0,(3,2)),zorder=1))
-ax.text(34,23.8,"新发关节炎／风湿病 543 例（4.84%）",ha="center",va="center",fontsize=10.2,
-        color="#9b2335",fontweight="bold")
-ax.text(34,18.0,"随访 15,357 人年 ｜ 发病密度 3.54 / 100 人年",ha="center",va="center",fontsize=9.0,color="#33414f")
-ax.text(34,12.4,"访谈批次：2021 年 8,113 人 / 372 例；2022 年 2,046 / 94；2023 年 1,051 / 77",
+ax.text(34,23.8,"新发关节炎／风湿病 %s 例（%.2f%%）" % (format(F["events"], ","), F["event_percent"]),
+        ha="center",va="center",fontsize=10.2,color="#9b2335",fontweight="bold")
+ax.text(34,18.0,"随访 %s 人年 ｜ 发病密度 %.2f / 100 人年"
+        % (format(F["person_years"], ","), F["incidence_density_per_100py"]),
+        ha="center",va="center",fontsize=9.0,color="#33414f")
+ax.text(34,12.4,"访谈批次：" + BATCH,
         ha="center",va="center",fontsize=8.2,color="#5d6b7a")
 
 plt.tight_layout(); plt.savefig(os.path.join(OUT, "fig0_flow.png"),bbox_inches="tight",facecolor="white"); plt.close()
